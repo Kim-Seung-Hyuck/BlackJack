@@ -47,6 +47,12 @@ export default function BlackJack() {
     // setDealer(dealerCard);
   };
 
+  const onClickReset = () => {
+    setPlayer({ sha: '', num: 0 });
+    setDealer({ sha: '', num: 0 });
+    setHitCard({ turnOnP: false, turnOnD: false });
+  };
+
   // player hit
   const onClickHit1 = () => {
     const playerCardSha = player.sha;
@@ -100,6 +106,7 @@ export default function BlackJack() {
       <h2>BlackJack</h2>
       <div className='marginB'>
         <button onClick={onClickStart}>Game Start</button>
+        <button onClick={onClickReset}>Reset</button>
       </div>
       <div className='wrap1'>
         <div className='marginB'>
