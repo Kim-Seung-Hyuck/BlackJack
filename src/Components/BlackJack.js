@@ -1,17 +1,16 @@
-import React, { useEffect } from 'react';
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './BlackJack.css';
 
 export default function BlackJack() {
   // 카드 문양
-  const shape = ['spade', 'club', 'dia', 'heart'];
+  const shapeList = ['spade', 'club', 'dia', 'heart'];
   // 카드 숫자
-  const number = ['A', 2, 3, 4, 5, 6, 7, 8, 9, 10, 'J', 'Q', 'K'];
+  const numberList = ['A', 2, 3, 4, 5, 6, 7, 8, 9, 10, 'J', 'Q', 'K'];
   // 전체 카드
   const card = [];
-  for (let i = 0; i < shape.length; i++) {
-    for (let j = 0; j < number.length; j++) {
-      let data = { sha: shape[i], num: number[j] };
+  for (let i = 0; i < shapeList.length; i++) {
+    for (let j = 0; j < numberList.length; j++) {
+      let data = { sha: shapeList[i], num: numberList[j] };
       // let data = shape[i] + number[j];
       card.push(data);
     }
@@ -23,33 +22,21 @@ export default function BlackJack() {
   const [cardList, setCardList] = useState();
   const [hitCard, setHitCard] = useState({
     turnOnP: false,
+    countP: 0,
     turnOnD: false,
     result: 0,
+    readOnlyHit: true,
+    readOnlyGame: false,
   });
 
   // game start 버튼 클릭 시 랜덤 카드 2개 부여
   const onClickStart = () => {
-    // const playerCardSha = [];
-    // const playerCardNum = [];
-    // const dealerCardSha = [];
-    // const dealerCardNum = [];
-    // const cardItems = cardList;
-    // // 하나 뽑고 뽑은 카드 리스트에서 제거하고 다음 카드 뽑고 그 카드도 리스트에서 제거하고 다음 카드도 뽑고 리스트에서 제거하고 ~~
-    // for (let i = 0; i < 2; i++) {
-    //   playerCardSha.push(cardItems[Math.floor(Math.random() * cardItems.length)].sha);
-    //   playerCardNum.push(cardItems[Math.floor(Math.random() * cardItems.length)].num);
-    //   dealerCardSha.push(cardItems[Math.floor(Math.random() * cardItems.length)].sha);
-    //   dealerCardNum.push(cardItems[Math.floor(Math.random() * cardItems.length)].num);
-    //   cardItems.splice(playerCardNum[i], 1);
-    //   cardItems.splice(dealerCardNum[i], 1);
-    //   console.log(cardItems);
-    // }
-
-    const randomIndex = [];
-    const playerCardSha = [];
-    const playerCardNum = [];
-    const dealerCardSha = [];
-    const dealerCardNum = [];
+    let randomIndex = [];
+    let playerCardSha = [];
+    let playerCardNum = [];
+    let dealerCardSha = [];
+    let dealerCardNum = [];
+    // 남은 카드 cardItems에 담기
     const cardItems = cardList;
     for (let i = 1; i < 5; i++) {
       const random = Math.floor(Math.random() * cardItems.length);
@@ -57,16 +44,19 @@ export default function BlackJack() {
       if (i % 2 === 1) {
         playerCardSha.push(cardItems[randomIndex[i - 1]].sha);
         playerCardNum.push(cardItems[randomIndex[i - 1]].num);
+        // 방금 사용한 카드 지우기
         cardItems.splice(randomIndex[i - 1], 1);
       } else {
         dealerCardSha.push(cardItems[randomIndex[i - 1]].sha);
         dealerCardNum.push(cardItems[randomIndex[i - 1]].num);
+        // 방금 사용한 카드 지우기
         cardItems.splice(randomIndex[i - 1], 1);
       }
     }
     setPlayer({ ...player, sha: playerCardSha, num: playerCardNum });
     setDealer({ ...dealer, sha: dealerCardSha, num: dealerCardNum });
     setCardList(cardItems);
+    setHitCard({ ...hitCard, readOnlyHit: false, readOnlyGame: true });
 
     // dealer 카드가 A, A가 나오는 경우
     if (dealerCardNum[0] === 'A' && dealerCardNum[1] === 'A') {
@@ -79,22 +69,26 @@ export default function BlackJack() {
     setPlayer({ sha: '', num: 0 });
     setDealer({ sha: '', num: 0 });
     setCardList(card);
-    setHitCard({ turnOnP: false, turnOnD: false, result: 0 });
+    setHitCard({ turnOnP: false, turnOnD: false, result: 0, countP: 0, readOnlyHit: true, readOnlyGame: false });
   };
 
   // player hit(stay click)
   const onClickHitPlay = () => {
-    const playerCardSha = player.sha;
-    const playerCardNum = player.num;
-    const cardItems = cardList;
-    const random = Math.floor(Math.random() * cardItems.length);
+    let playerCardSha = player.sha;
+    let playerCardNum = player.num;
+    // 남은 카드 cardItems에 담기
+    let cardItems = cardList;
+    let random = Math.floor(Math.random() * cardItems.length);
     playerCardSha.push(cardItems[random].sha);
     playerCardNum.push(cardItems[random].num);
+    // 방금 사용한 카드 지우기
     cardItems.splice(random, 1);
     setPlayer({ sha: playerCardSha, num: playerCardNum });
     setHitCard({ ...hitCard, turnOnP: true });
     setCardList(cardItems);
 
+    // 플레이어 카드가 4장 이상이면 승패가 나오지 않음 - playerCard[2]로 인덱스를 고정해놔서 그럼...
+    // for문을 돌림 - for (let i = 2; i < countP; i++)
     if (playerCardNum[2] === 'A') {
       if (playerScore > 10) {
         const playerCardNum = 1;
@@ -104,31 +98,63 @@ export default function BlackJack() {
       } else {
         const playerCardNum = 11;
         if (playerScore + playerCardNum > 21) {
-          setHitCard({ ...hitCard, result: 1, turnOnP: true });
+          setHitCard({ ...hitCard, result: 1, turnOnP: true, readOnlyHit: true });
         }
       }
     } else if (playerCardNum[2] === 'J' || playerCardNum[2] === 'Q' || playerCardNum[2] === 'K') {
       const playerCardNum = 10;
       if (playerScore + playerCardNum > 21) {
-        setHitCard({ ...hitCard, result: 1, turnOnP: true });
+        setHitCard({ ...hitCard, result: 1, turnOnP: true, readOnlyHit: true });
       }
     }
 
     if (playerScore + playerCardNum[2] > 21) {
-      setHitCard({ ...hitCard, result: 1, turnOnP: true });
+      setHitCard({ ...hitCard, result: 1, turnOnP: true, readOnlyHit: true });
     }
+
+    // let count = 1;
+    // count += hitCard.countP;
+    // setHitCard({ ...hitCard, countP: count });
+    // console.log(hitCard.countP);
+
+    // for (let i = 2; i < hitCard.countP; i++) {
+    //   if (playerCardNum[i] === 'A') {
+    //     if (playerScore > 10) {
+    //       const playerCardNum = 1;
+    //       if (playerScore + playerCardNum > 21) {
+    //         setHitCard({ ...hitCard, result: 1, turnOnP: true });
+    //       }
+    //     } else {
+    //       const playerCardNum = 11;
+    //       if (playerScore + playerCardNum > 21) {
+    //         setHitCard({ ...hitCard, result: 1, turnOnP: true, readOnlyHit: true });
+    //       }
+    //     }
+    //   } else if (playerCardNum[i] === 'J' || playerCardNum[i] === 'Q' || playerCardNum[i] === 'K') {
+    //     const playerCardNum = 10;
+    //     if (playerScore + playerCardNum > 21) {
+    //       setHitCard({ ...hitCard, result: 1, turnOnP: true, readOnlyHit: true });
+    //     }
+    //   }
+
+    //   if (playerScore + playerCardNum[i] > 21) {
+    //     setHitCard({ ...hitCard, result: 1, turnOnP: true, readOnlyHit: true });
+    //   }
+    // }
   };
 
   // dealer hit
-  const onClickHitDeal = () => {
+  const onClickStayPlay = () => {
     // 경우 나누기 - 16 이하면 카드 추가, 17 이상이면 게임 끝
-    const dealerCardSha = dealer.sha;
-    const dealerCardNum = dealer.num;
-    const cardItems = cardList;
-    const random = Math.floor(Math.random() * cardItems.length);
+    let dealerCardSha = dealer.sha;
+    let dealerCardNum = dealer.num;
+    // 남은 카드 cardItems에 담기
+    let cardItems = cardList;
+    let random = Math.floor(Math.random() * cardItems.length);
     if (dealerScore <= 16) {
       dealerCardSha.push(cardItems[random].sha);
       dealerCardNum.push(cardItems[random].num);
+      // 방금 사용한 카드 지우기
       cardItems.splice(random, 1);
       setDealer({ sha: dealerCardSha, num: dealerCardNum });
       setHitCard({ ...hitCard, turnOnD: true });
@@ -140,17 +166,17 @@ export default function BlackJack() {
         if (dealerScore + dealerCardNum <= 21) {
           if (dealerScore + dealerCardNum === playerScore) {
             // 무승부
-            setHitCard({ ...hitCard, result: 3, turnOnD: true });
+            setHitCard({ ...hitCard, result: 3, turnOnD: true, readOnlyHit: true });
           } else if (dealerScore + dealerCardNum > playerScore) {
             // 딜러 win
-            setHitCard({ ...hitCard, result: 1, turnOnD: true });
+            setHitCard({ ...hitCard, result: 1, turnOnD: true, readOnlyHit: true });
           } else {
             // 플레이어 win
-            setHitCard({ ...hitCard, result: 2, turnOnD: true });
+            setHitCard({ ...hitCard, result: 2, turnOnD: true, readOnlyHit: true });
           }
         } else {
           // 딜러 21 초과 플레이어 win
-          setHitCard({ ...hitCard, result: 2, turnOnD: true });
+          setHitCard({ ...hitCard, result: 2, turnOnD: true, readOnlyHit: true });
         }
       } else if (dealerCardNum[2] === 'J' || dealerCardNum[2] === 'Q' || dealerCardNum[2] === 'K') {
         // 추가된 카드가 J, Q, K 인 경우
@@ -158,34 +184,34 @@ export default function BlackJack() {
         if (dealerScore + dealerCardNum <= 21) {
           if (dealerScore + dealerCardNum === playerScore) {
             // 무승부
-            setHitCard({ ...hitCard, result: 3, turnOnD: true });
+            setHitCard({ ...hitCard, result: 3, turnOnD: true, readOnlyHit: true });
           } else if (dealerScore + dealerCardNum > playerScore) {
             // 딜러 win
-            setHitCard({ ...hitCard, result: 1, turnOnD: true });
+            setHitCard({ ...hitCard, result: 1, turnOnD: true, readOnlyHit: true });
           } else {
             // 플레이어 win
-            setHitCard({ ...hitCard, result: 2, turnOnD: true });
+            setHitCard({ ...hitCard, result: 2, turnOnD: true, readOnlyHit: true });
           }
         } else {
           // 딜러 21 초과 플레이어 win
-          setHitCard({ ...hitCard, result: 2, turnOnD: true });
+          setHitCard({ ...hitCard, result: 2, turnOnD: true, readOnlyHit: true });
         }
       } else {
         // 추가된 카드가 A, J, Q, K가 아닌 경우
         if (dealerScore + dealerCardNum[2] <= 21) {
           if (dealerScore + dealerCardNum[2] === playerScore) {
             // 무승부
-            setHitCard({ ...hitCard, result: 3, turnOnD: true });
+            setHitCard({ ...hitCard, result: 3, turnOnD: true, readOnlyHit: true });
           } else if (dealerScore + dealerCardNum[2] > playerScore) {
             // 딜러 win
-            setHitCard({ ...hitCard, result: 1, turnOnD: true });
+            setHitCard({ ...hitCard, result: 1, turnOnD: true, readOnlyHit: true });
           } else {
             // 플레이어 win
-            setHitCard({ ...hitCard, result: 2, turnOnD: true });
+            setHitCard({ ...hitCard, result: 2, turnOnD: true, readOnlyHit: true });
           }
         } else {
           // 딜러 21 초과 플레이어 win
-          setHitCard({ ...hitCard, result: 2, turnOnD: true });
+          setHitCard({ ...hitCard, result: 2, turnOnD: true, readOnlyHit: true });
         }
       }
     } else {
@@ -193,17 +219,17 @@ export default function BlackJack() {
       if (dealerScore <= 21) {
         if (dealerScore === playerScore) {
           // 무승부
-          setHitCard({ ...hitCard, result: 3 });
+          setHitCard({ ...hitCard, result: 3, readOnlyHit: true });
         } else if (dealerScore > playerScore) {
           // 딜러 win
-          setHitCard({ ...hitCard, result: 1 });
+          setHitCard({ ...hitCard, result: 1, readOnlyHit: true });
         } else {
           // 플레이어 win
-          setHitCard({ ...hitCard, result: 2 });
+          setHitCard({ ...hitCard, result: 2, readOnlyHit: true });
         }
       } else {
         // 딜러 21 초과 플레이어 win
-        setHitCard({ ...hitCard, result: 2 });
+        setHitCard({ ...hitCard, result: 2, readOnlyHit: true });
       }
     }
   };
@@ -211,7 +237,7 @@ export default function BlackJack() {
   // plaerScore 계산
   let playerScore = 0;
   for (let i = 0; i < player.num.length; i++) {
-    if (player.num[i] == 'A') {
+    if (player.num[i] === 'A') {
       if (playerScore > 10) {
         playerScore += 1;
       } else {
@@ -227,7 +253,7 @@ export default function BlackJack() {
   // dealerScore 계산
   let dealerScore = 0;
   for (let i = 0; i < dealer.num.length; i++) {
-    if (dealer.num[i] == 'A') {
+    if (dealer.num[i] === 'A') {
       dealerScore += 11;
     } else if (dealer.num[i] === 'J' || dealer.num[i] === 'Q' || dealer.num[i] === 'K') {
       dealerScore += 10;
@@ -245,7 +271,9 @@ export default function BlackJack() {
     <div style={{ marginLeft: '20px' }}>
       <h2>BlackJack</h2>
       <div className='marginB'>
-        <button onClick={onClickStart}>Game Start</button>
+        <button disabled={hitCard.readOnlyGame} onClick={onClickStart}>
+          Game Start
+        </button>
         <button onClick={onClickReset}>Reset</button>
       </div>
       <div className='wrap1'>
@@ -277,8 +305,13 @@ export default function BlackJack() {
           숫자 합: {dealerScore}
         </div>
         <div className='marginB'>
-          <button onClick={onClickHitPlay}>hit</button>
-          <button onClick={onClickHitDeal}>stay</button>
+          {/* disabled={} readOnly - 특정 값 충족 시 readOnly */}
+          <button disabled={hitCard.readOnlyHit} onClick={onClickHitPlay}>
+            hit
+          </button>
+          <button disabled={hitCard.readOnlyHit} onClick={onClickStayPlay}>
+            stay
+          </button>
           <h4>player</h4>
           <br />
           <div className='wrap2'>
